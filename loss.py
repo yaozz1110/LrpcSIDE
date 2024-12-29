@@ -138,18 +138,6 @@ class MonodepthLoss(nn.modules.Module):
         dist2 = torch.mean(dist2)
         return dist1 + dist2
 
-    # def compute_chamfer_distance(self, pointcloud1, pointcloud2):
-    #     bs, num_points, h, w = pointcloud1.size()
-    #     # 计算pointcloud1中的点到在pointcloud2中最近的点的距离
-    #     dist1 = torch.sum((pointcloud1.view(bs, num_points, 1, 3) - pointcloud2.view(bs, 1, num_points, 3)) ** 2, dim=-1)
-    #     dist1, _ = torch.min(dist1, dim=-1)
-    #     dist1 = torch.mean(dist1)
-    #     #计算pointcloud2中的点到在pointcloud1中最近的点的距离
-    #     dist2 = torch.sum((pointcloud2.view(bs, num_points, 1, 3) - pointcloud1.view(bs, 1, num_points, 3)) ** 2, dim=-1)
-    #     dist2, _ = torch.min(dist2, dim=-1)
-    #     dist2 = torch.mean(dist2)
-    #     return dist1 + dist2
-
     def init_image_coor(self):
         x_row = np.arange(0, self.input_size[1])
         x = np.tile(x_row, (self.input_size[0], 1))
@@ -208,7 +196,6 @@ class MonodepthLoss(nn.modules.Module):
         :param pw: 3D points
         :return:
         """
-        # 计算缩放因子
         scale_y, scale_x = pw.size(1) / 256.0, pw.size(2) / 512.0
         # apply the scales to the indices
         p1_x = (torch.from_numpy(p123['p1_x']) * scale_x).long()
@@ -264,15 +251,15 @@ class MonodepthLoss(nn.modules.Module):
     def select_points_groups(self, input):
         pw_groups_left_not_ignore = []
         pw_groups_right_not_ignore = []
-        pw_left_all = []  # 列表用于存储所有的pw_left
-        pw_right_all = []  # 列表用于存储所有的pw_right
+        pw_left_all = [] 
+        pw_right_all = []  
         p123_all = []
         for i in range(len(input)):
             B, C, H, W = input[i].shape
-            pw_left = self.transfer_xyz(input[i][:, 0, :, :])  # 获取左视差图并转换坐标
-            pw_right = self.transfer_xyz(input[i][:, 1, :, :])  # 获取右视差图并转换坐标
-            pw_left_all.append(pw_left)  # 添加到列表中
-            pw_right_all.append(pw_right)  # 添加到列表中
+            pw_left = self.transfer_xyz(input[i][:, 0, :, :]) 
+            pw_right = self.transfer_xyz(input[i][:, 1, :, :])  
+            pw_left_all.append(pw_left) 
+            pw_right_all.append(pw_right) 
             p123 = self.select_index()
             p123_all.append(p123)
 
@@ -398,9 +385,9 @@ class MonodepthLoss(nn.modules.Module):
             loss = torch.mean(loss)
 
         loss_list.append(loss)
-        final_3d_loss = torch.mean(torch.stack(loss_list))  # 结合所有的loss
+        final_3d_loss = torch.mean(torch.stack(loss_list))  
 
-        # 使用Chamfer距离作为损失函数
+   
         cd_loss = []
         for gt_points, dt_points in zip(gt_points_list, dt_points_list):
             loss = self.compute_chamfer_distance(gt_points, dt_points)
