@@ -15,16 +15,16 @@ import functools
 # from lpg import *
 
 class conv(nn.Module):
-    def __init__(self, num_in_layers, num_out_layers, kernel_size, stride):  # kernel_size, stride 卷积核大小  步长
-        super(conv, self).__init__()  # 子类把父类的__init__()放到自己的__init__()当中，这样子类就有了父类的__init__()的那些东西。
+    def __init__(self, num_in_layers, num_out_layers, kernel_size, stride): 
+        super(conv, self).__init__()  
         self.kernel_size = kernel_size
         self.conv_base = nn.Conv2d(num_in_layers, num_out_layers, kernel_size=kernel_size, stride=stride)
         self.normalize = nn.BatchNorm2d(num_out_layers)
 
     def forward(self, x):
-        p = int(np.floor((self.kernel_size - 1) / 2))  # np.floor()返回不大于输入参数的最大整数
+        p = int(np.floor((self.kernel_size - 1) / 2)) 
         p2d = (p, p, p, p)
-        x = self.conv_base(F.pad(x, p2d))  ## p2d = (左边填充数， 右边填充数， 上边填充数， 下边填充数)
+        x = self.conv_base(F.pad(x, p2d)) 
         x = self.normalize(x)
         return F.elu(x, inplace=True)
 
@@ -119,19 +119,6 @@ def resblock_basic(num_in_layers, num_out_layers, num_blocks, stride):
     return nn.Sequential(*layers)
 
 
-# class upconv(nn.Module):
-#     def __init__(self, num_in_layers, num_out_layers, kernel_size, scale):  # 出现scale这个参数，其他的都是stride
-#         super(upconv, self).__init__()
-#         self.scale = scale
-#         self.elu = nn.ELU()
-#         self.conv1 = conv(num_in_layers, num_out_layers, kernel_size, 1)
-#
-#     def forward(self, x):
-#         x = nn.functional.interpolate(x, scale_factor=self.scale, mode='bilinear', align_corners=True)
-#         out = self.conv1(x)
-#         out = self.elu(out)  # 激活函数 lpg里移过来的 原本不曾有
-#         return out
-
 class upconv(nn.Module):  # 反卷积类
     def __init__(self, in_channels, out_channels, ratio=2):
         super(upconv, self).__init__()
@@ -176,8 +163,7 @@ class _NonLocalBlockND(nn.Module):
                 self.inter_channels = 1
 
         conv_nd = nn.Conv2d
-        #max_pool_layer = nn.MaxPool2d(kernel_size=(2, 2))
-        #bn = nn.BatchNorm2d
+       
 
         self.g = conv_nd(in_channels=self.in_channels, out_channels=self.inter_channels,
                          kernel_size=1, stride=1, padding=0)
@@ -326,13 +312,13 @@ class Resnet18_md(nn.Module):
         self.nonlo6 = _NonLocalBlockND(512, inter_channels=None)
         # decoder
         self.upconv5 = upconv(512, 512, 3, 2)
-        self.bn5 = nn.BatchNorm2d(512, momentum=0.01, affine=True, eps=1.1e-5)  # 数据的归一化处理，这使得数据在进行Relu之前不会因为数据过大而导致网络性能的不稳定
+        self.bn5 = nn.BatchNorm2d(512, momentum=0.01, affine=True, eps=1.1e-5)  
         self.iconv5 = conv(256 + 512, 512, 3, 1)
 
         self.upconv4 = upconv(512, 256, 3, 2)
         self.bn4 = nn.BatchNorm2d(256, momentum=0.01, affine=True, eps=1.1e-5)
         self.iconv4 = conv(128 + 256, 256, 3, 1)
-        self.reduc8x8 = reduction_1x1(256, 128, self.args.max_depth)    # 把“128*128改成了“256*128”因为没有用空洞卷积(num_features // 4, num_features // 4, self.params.max_depth)
+        self.reduc8x8 = reduction_1x1(256, 128, self.args.max_depth)  
         self.lpg8x8 = local_planar_guidance(8)
 
         self.upconv3 = upconv(128, 128, 3, 2)
@@ -344,14 +330,10 @@ class Resnet18_md(nn.Module):
 
         self.upconv2 = upconv(128, 64, 3, 2)
         self.bn2 = nn.BatchNorm2d(64, momentum=0.01, affine=True, eps=1.1e-5)
-        self.iconv2 = conv(64 + 64 + 2 + 1, 64, 3, 1)  #注意+1  +2
+        self.iconv2 = conv(64 + 64 + 2 + 1, 64, 3, 1)  #+1  +2
         self.reduc2x2 = reduction_1x1(64, 32, self.args.max_depth) #num_features // 8, num_features // 16
         self.lpg2x2 = local_planar_guidance(2)
         self.disp3_layer = get_disp(64)
-
-        # self.upconv2 = upconv(64, 32, 3, 2)
-        # self.iconv2 = conv(64 + 32 + 2, 32, 3, 1)
-        # self.disp2_layer = get_disp(32)
 
         self.upconv1 = upconv(64, 32, 3, 2)
         self.reduc1x1 = reduction_1x1(32, 16, self.params.max_depth, is_final=True) #num_features // 16, num_features // 32
@@ -451,20 +433,16 @@ class Resnet18_md(nn.Module):
 
 
 class struct_model(nn.Module):
-    def __init__(self, params, feat_out_channels, num_features=512):  # params参数 feat_out_channels特征输出通道  特征数
+    def __init__(self, params, feat_out_channels, num_features=512): 
         super(struct_model, self).__init__()
         self.params = params
 
         self.upconv5 = upconv(feat_out_channels[4], num_features)
         self.bn5 = nn.BatchNorm2d(num_features, momentum=0.01, affine=True,
-                                  eps=1.1e-5)  # 数据的归一化处理，这使得数据在进行Relu之前不会因为数据过大而导致网络性能的不稳定
-
+                                  eps=1.1e-5)  
         self.conv5 = torch.nn.Sequential(
             nn.Conv2d(num_features + feat_out_channels[3], num_features, 3, 1, 1, bias=False),
             nn.ELU())
-
-        # self.reduc16x16 = reduction_1x1(num_features, num_features, self.params.max_depth)
-        # self.lpg16x16 = local_planar_guidance(16)
 
         self.upconv4 = upconv(num_features, num_features // 2)
         self.bn4 = nn.BatchNorm2d(num_features // 2, momentum=0.01, affine=True, eps=1.1e-5)
@@ -473,29 +451,23 @@ class struct_model(nn.Module):
             nn.ELU())
 
         self.disp4_layer = get_disp(num_features // 2)
-        # self.reduc8x8 = reduction_1x1(num_features // 2, num_features // 2, self.params.max_depth)
-        # self.lpg8x8 = local_planar_guidance(8)
-
+        
         self.upconv3 = upconv(num_features // 2, num_features // 4)
         self.bn3 = nn.BatchNorm2d(num_features // 4, momentum=0.01, affine=True, eps=1.1e-5)
         self.conv3 = torch.nn.Sequential(
             nn.Conv2d(num_features // 4 + feat_out_channels[1] + 2, num_features // 4, 3, 1, 1, bias=False),
             nn.ELU())
-        # 加入getdisp的 +2
+      
 
         self.disp3_layer = get_disp(num_features // 4)
-        # self.reduc4x4 = reduction_1x1(num_features // 4, num_features // 8, self.params.max_depth)
-        # self.lpg4x4 = local_planar_guidance(4)
-
+       
         self.upconv2 = upconv(num_features // 4, num_features // 8)
         self.bn2 = nn.BatchNorm2d(num_features // 8, momentum=0.01, affine=True, eps=1.1e-5)
         self.conv2 = torch.nn.Sequential(
             nn.Conv2d(num_features // 8 + feat_out_channels[0] + 2, num_features // 8, 3, 1, 1, bias=False),
             nn.ELU())
         self.disp2_layer = get_disp(num_features // 8)
-        # self.reduc2x2 = reduction_1x1(num_features // 8, num_features // 16, self.params.max_depth)
-        # self.lpg2x2 = local_planar_guidance(2)
-
+        
         self.upconv1 = upconv(num_features // 8, num_features // 16)
         self.reduc1x1 = reduction_1x1(num_features // 16, num_features // 32, self.params.max_depth, is_final=True)
         self.conv1 = torch.nn.Sequential(nn.Conv2d(num_features // 16 + 2, num_features // 16, 3, 1, 1, bias=False),
@@ -507,8 +479,8 @@ class struct_model(nn.Module):
         self.disp0_layer = get_disp(num_features // 16)
 
     def forward(self, features):
-        skip0, skip1, skip2, skip3 = features[1], features[2], features[3], features[4] #encoder 中稍后用作跳跃连接的四层输出
-        dense_features = torch.nn.ReLU()(features[5]) #encoder 最后一层输出的特征
+        skip0, skip1, skip2, skip3 = features[1], features[2], features[3], features[4]
+        dense_features = torch.nn.ReLU()(features[5])
         upconv5 = self.upconv5(dense_features)  # H/16
         upconv5 = self.bn5(upconv5)
         concat5 = torch.cat([upconv5, skip3], dim=1)
