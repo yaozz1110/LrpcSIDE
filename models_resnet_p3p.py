@@ -15,16 +15,16 @@ import functools
 # from lpg import *
 
 class conv(nn.Module):
-    def __init__(self, num_in_layers, num_out_layers, kernel_size, stride):  # kernel_size, stride 卷积核大小  步长
-        super(conv, self).__init__()  # 子类把父类的__init__()放到自己的__init__()当中，这样子类就有了父类的__init__()的那些东西。
+    def __init__(self, num_in_layers, num_out_layers, kernel_size, stride): 
+        super(conv, self).__init__()  
         self.kernel_size = kernel_size
         self.conv_base = nn.Conv2d(num_in_layers, num_out_layers, kernel_size=kernel_size, stride=stride)
         self.normalize = nn.BatchNorm2d(num_out_layers)
 
     def forward(self, x):
-        p = int(np.floor((self.kernel_size - 1) / 2))  # np.floor()返回不大于输入参数的最大整数
+        p = int(np.floor((self.kernel_size - 1) / 2)) 
         p2d = (p, p, p, p)
-        x = self.conv_base(F.pad(x, p2d))  ## p2d = (左边填充数， 右边填充数， 上边填充数， 下边填充数)
+        x = self.conv_base(F.pad(x, p2d))  
         x = self.normalize(x)
         return F.elu(x, inplace=True)
 
@@ -63,7 +63,7 @@ class resconv(nn.Module):
         self.normalize = nn.BatchNorm2d(4 * num_out_layers)
 
     def forward(self, x):
-        # do_proj = x.size()[1] != self.num_out_layers or self.stride == 2
+     
         do_proj = True
         shortcut = []
         x_out = self.conv1(x)
@@ -88,7 +88,7 @@ class resconv_basic(nn.Module):
         self.normalize = nn.BatchNorm2d(num_out_layers)
 
     def forward(self, x):
-        #         do_proj = x.size()[1] != self.num_out_layers or self.stride == 2
+    
         do_proj = True
         shortcut = []
         x_out = self.conv1(x)
@@ -100,7 +100,7 @@ class resconv_basic(nn.Module):
         return F.elu(self.normalize(x_out + shortcut), inplace=True)
 
 
-# resnet50 用来重复残差快
+
 def resblock(num_in_layers, num_out_layers, num_blocks, stride):
     layers = []
     layers.append(resconv(num_in_layers, num_out_layers, stride))
@@ -110,27 +110,13 @@ def resblock(num_in_layers, num_out_layers, num_blocks, stride):
     return nn.Sequential(*layers)
 
 
-# resnet18 用来重复同一个残差快
+
 def resblock_basic(num_in_layers, num_out_layers, num_blocks, stride):
     layers = []
     layers.append(resconv_basic(num_in_layers, num_out_layers, stride))
     for i in range(1, num_blocks):
         layers.append(resconv_basic(num_out_layers, num_out_layers, 1))
     return nn.Sequential(*layers)
-
-
-# class upconv(nn.Module):
-#     def __init__(self, num_in_layers, num_out_layers, kernel_size, scale):  # 出现scale这个参数，其他的都是stride
-#         super(upconv, self).__init__()
-#         self.scale = scale
-#         self.elu = nn.ELU()
-#         self.conv1 = conv(num_in_layers, num_out_layers, kernel_size, 1)
-#
-#     def forward(self, x):
-#         x = nn.functional.interpolate(x, scale_factor=self.scale, mode='bilinear', align_corners=True)
-#         out = self.conv1(x)
-#         out = self.elu(out)  # 激活函数 lpg里移过来的 原本不曾有
-#         return out
 
 class upconv(nn.Module):  # 反卷积类
     def __init__(self, in_channels, out_channels, ratio=2):
@@ -176,9 +162,7 @@ class _NonLocalBlockND(nn.Module):
                 self.inter_channels = 1
 
         conv_nd = nn.Conv2d
-        #max_pool_layer = nn.MaxPool2d(kernel_size=(2, 2))
-        #bn = nn.BatchNorm2d
-
+      
         self.g = conv_nd(in_channels=self.in_channels, out_channels=self.inter_channels,
                          kernel_size=1, stride=1, padding=0)
 
