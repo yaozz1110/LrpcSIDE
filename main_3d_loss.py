@@ -32,14 +32,14 @@ def return_arguments():
                             "image_02/data" for left images and \
                             "image_03/data" for right images'
                         )
-    parser.add_argument('--val_data_dir', default='../data/kitti/val',
+    parser.add_argument('--val_data_dir', default='',
                         help='path to the validation dataset folder. \
                             It should contain subfolders with following structure:\
                             "image_02/data" for left images and \
                             "image_03/data" for right images'
                         )
-    parser.add_argument('--model_path', default='../data/models/', help='path to the trained model')
-    parser.add_argument('--output_directory', default='../data/output_669/',
+    parser.add_argument('--model_path', default='', help='path to the trained model')
+    parser.add_argument('--output_directory', default='',
                         help='where save dispairities\
                         for tested images'
                         )
@@ -48,7 +48,7 @@ def return_arguments():
     parser.add_argument('--input_width', type=int, help='input width',
                         default=512)
     parser.add_argument('--input_size', nargs='+', help='input size', default=[256, 512])
-    parser.add_argument('--encoder',  default='resnext50',
+    parser.add_argument('--encoder',  default='',
                         help='type of encoder, densenet121_bts, densenet161_bts, '
                         'resnet101_bts, resnet50_bts, resnext50_bts or resnext101_bts',
                         )
@@ -101,16 +101,6 @@ def return_arguments():
                         help='Number of workers in dataloader')
     parser.add_argument('--use_multiple_gpu', default=False)
 
-    # Self-attention
-    # parser.add_argument("--no_self_attention",
-    #                          help="if set, diables self-attention",
-    #                          action="store_true")
-    # parser.add_argument("--weights_init",
-    #                     type=str,
-    #                     help="pretrained or scratch",
-    #                     default="pretrained",
-    #                     choices=["pretrained", "scratch"])
-
     args = parser.parse_args()
     return args
 
@@ -147,7 +137,7 @@ class Model:
 
         # Set up model
         self.device = args.device
-        self.model = get_model(args)  # , input_channels=args.input_channels, pretrained=args.pretrained
+        self.model = get_model(args)  
         self.model = self.model.to(self.device)
         if args.use_multiple_gpu:
             self.model = torch.nn.DataParallel(self.model)
@@ -174,9 +164,9 @@ class Model:
                                                          (args.input_height, args.input_width),
                                                          args.num_workers)
         else:
-            pth = os.path.join(args.model_path, 'sa_res18/sa_res18.pth')#model_cpt.pth   sa_mondepth/sa_100.pth
+            pth = os.path.join(args.model_path, 'sa_res18/sa_res18.pth')
             self.model.load_state_dict(torch.load(pth,map_location='cpu'))
-            #self.model.load_state_dict({k.replace('module.', ''): v for k, v in torch.load(pth,map_location='cpu').items()})
+           
 
             args.augment_parameters = None
             args.do_augmentation = False
@@ -191,12 +181,6 @@ class Model:
         self.output_directory = args.output_directory
         self.input_height = args.input_height
         self.input_width = args.input_width
-
-        # self.n_img, self.loader = prepare_dataloader(args.data_dir, args.mode, args.augment_parameters,
-        #                                              args.do_augmentation, args.batch_size,
-        #                                              (args.input_height, args.input_width),
-        #                                              args.num_workers)
-
 
         if 'cuda' in self.device:
             torch.cuda.synchronize()
@@ -333,7 +317,7 @@ class Model:
             for (i, data) in enumerate(self.loader):
                 # Get the inputs
                 data = to_device(data, self.device)
-                left = data.squeeze()  # 此处对data进行squeeze操作
+                left = data.squeeze()  
                 # Do a forward pass
                 disps = self.model(left)
                 disp = disps[0][:, 0, :, :].unsqueeze(1)
